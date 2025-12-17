@@ -11,14 +11,6 @@ export const routes: Routes = [
     loadComponent: () => import('./products/list/list').then((m) => m.List),
   },
   {
-    path: 'products/new',
-    loadComponent: () => import('./products/form/form').then((m) => m.Form),
-  },
-  {
-    path: 'products/edit/:id',
-    loadComponent: () => import('./products/form/form').then((m) => m.Form),
-  },
-  {
     path: '**',
     redirectTo: '/products',
   },

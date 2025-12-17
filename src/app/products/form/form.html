@@ -1,105 +1,138 @@
 <div class="product-form-container">
-  <p-card>
-    <ng-template pTemplate="header">
-      <div class="card-header">
-        <h2>{{ isEditMode ? 'Editar Produto' : 'Novo Produto' }}</h2>
-      </div>
-    </ng-template>
-
-    <form [formGroup]="productForm" (ngSubmit)="onSubmit()">
+  <form [formGroup]="productForm" (ngSubmit)="onSubmit()">
+    <p-fieldset legend="Informações Básicas" [toggleable]="false">
       <div class="form-grid">
         <div class="form-field">
-          <label for="name">Nome do Produto *</label>
-          <input
-            id="name"
-            type="text"
-            pInputText
-            formControlName="name"
-            [class.ng-invalid]="isFieldInvalid('name')"
-            placeholder="Ex: Notebook Dell"
-          />
+          <label for="name" class="block mb-2" [class.text-red-500]="isFieldInvalid('name')">
+            Nome do Produto <span class="text-red-500">*</span>
+          </label>
+          <p-inputGroup>
+            <p-inputGroupAddon>
+              <i class="pi pi-tag"></i>
+            </p-inputGroupAddon>
+            <input
+              id="name"
+              type="text"
+              pInputText
+              formControlName="name"
+              [class.ng-invalid]="isFieldInvalid('name')"
+              placeholder="Ex: Notebook Dell"
+            />
+          </p-inputGroup>
           @if (isFieldInvalid('name')) {
-          <small class="p-error">
+          <small class="p-error error-message">
+            <i class="pi pi-exclamation-circle"></i>
             {{ getFieldError('name') }}
           </small>
           }
         </div>
 
         <div class="form-field">
-          <label for="category">Categoria *</label>
-          <input
-            id="category"
-            type="text"
-            pInputText
-            formControlName="category"
-            [class.ng-invalid]="isFieldInvalid('category')"
-            placeholder="Ex: Eletrônicos"
-          />
+          <label
+            for="category"
+            class="block mb-2"
+            [class.text-red-500]="isFieldInvalid('category')"
+          >
+            Categoria <span class="text-red-500">*</span>
+          </label>
+          <p-inputGroup>
+            <p-inputGroupAddon>
+              <i class="pi pi-folder"></i>
+            </p-inputGroupAddon>
+            <input
+              id="category"
+              type="text"
+              pInputText
+              formControlName="category"
+              [class.ng-invalid]="isFieldInvalid('category')"
+              placeholder="Ex: Eletrônicos"
+            />
+          </p-inputGroup>
           @if (isFieldInvalid('category')) {
-          <small class="p-error">
+          <small class="p-error error-message">
+            <i class="pi pi-exclamation-circle"></i>
             {{ getFieldError('category') }}
           </small>
           }
         </div>
+      </div>
+    </p-fieldset>
 
+    <p-fieldset legend="Detalhes do Produto" [toggleable]="false">
+      <div class="form-grid">
         <div class="form-field full-width">
-          <label for="description">Descrição *</label>
+          <label
+            for="description"
+            class="block mb-2"
+            [class.text-red-500]="isFieldInvalid('description')"
+          >
+            Descrição <span class="text-red-500">*</span>
+          </label>
           <textarea
             id="description"
             pTextarea
             formControlName="description"
             [class.ng-invalid]="isFieldInvalid('description')"
             [rows]="5"
-            placeholder="Descreva o produto..."
+            [maxlength]="256"
+            placeholder="Descreva o produto detalhadamente..."
           ></textarea>
           @if (isFieldInvalid('description')) {
-          <small class="p-error">
+          <small class="p-error error-message">
+            <i class="pi pi-exclamation-circle"></i>
             {{ getFieldError('description') }}
           </small>
           }
         </div>
 
         <div class="form-field">
-          <label for="price">Preço *</label>
-          <p-inputNumber
-            id="price"
-            formControlName="price"
-            mode="currency"
-            currency="BRL"
-            locale="pt-BR"
-            [min]="0.01"
-            [class.ng-invalid]="isFieldInvalid('price')"
-            [showButtons]="true"
-            [minFractionDigits]="2"
-            [maxFractionDigits]="2"
-            styleClass="full-width-input"
-          ></p-inputNumber>
+          <label for="price" class="block mb-2" [class.text-red-500]="isFieldInvalid('price')">
+            Preço <span class="text-red-500">*</span>
+          </label>
+          <p-inputGroup>
+            <p-inputGroupAddon>
+              <i class="pi pi-dollar"></i>
+            </p-inputGroupAddon>
+            <p-inputNumber
+              id="price"
+              formControlName="price"
+              mode="currency"
+              currency="BRL"
+              locale="pt-BR"
+              [min]="0.01"
+              [class.ng-invalid]="isFieldInvalid('price')"
+              [showButtons]="true"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              styleClass="full-width-input"
+            ></p-inputNumber>
+          </p-inputGroup>
           @if (isFieldInvalid('price')) {
-          <small class="p-error">
+          <small class="p-error error-message">
+            <i class="pi pi-exclamation-circle"></i>
             {{ getFieldError('price') }}
           </small>
           }
         </div>
       </div>
+    </p-fieldset>
 
-      <div class="form-actions">
-        <p-button
-          label="Cancelar"
-          icon="pi pi-times"
-          severity="secondary"
-          (onClick)="onCancel()"
-          [disabled]="loading"
-        ></p-button>
-        <p-button
-          [label]="isEditMode ? 'Atualizar' : 'Criar'"
-          icon="pi pi-check"
-          type="submit"
-          [loading]="loading"
-          [disabled]="productForm.invalid"
-        ></p-button>
-      </div>
-    </form>
-  </p-card>
-
-  <p-toast></p-toast>
+    <div class="form-actions">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-times"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="onCancel()"
+        [disabled]="loading"
+      ></p-button>
+      <p-button
+        [label]="isEditMode ? 'Atualizar Produto' : 'Criar Produto'"
+        [icon]="isEditMode ? 'pi pi-check' : 'pi pi-plus'"
+        type="submit"
+        [loading]="loading"
+        [disabled]="productForm.invalid"
+      ></p-button>
+    </div>
+  </form>
 </div>

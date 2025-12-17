@@ -1,15 +1,18 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { DividerModule } from 'primeng/divider';
+import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { FieldsetModule } from 'primeng/fieldset';
+import { InputGroupModule } from 'primeng/inputgroup';
+import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
-import { ToastModule } from 'primeng/toast';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject } from 'rxjs';
 import { ProductService } from '../../services/product.service';
 
 @Component({
@@ -20,11 +23,14 @@ import { ProductService } from '../../services/product.service';
     InputTextModule,
     TextareaModule,
     InputNumberModule,
+    InputGroupModule,
+    InputGroupAddonModule,
     ButtonModule,
     CardModule,
-    ToastModule,
+    FieldsetModule,
+    DividerModule,
   ],
-  providers: [MessageService],
+  providers: [],
   templateUrl: './form.html',
   styleUrl: './form.scss',
 })
@@ -37,23 +43,21 @@ export class Form implements OnInit, OnDestroy {
 
   private fb = inject(FormBuilder);
   private productService = inject(ProductService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
   private messageService = inject(MessageService);
+  private dialogRef = inject(DynamicDialogRef);
+  private config = inject(DynamicDialogConfig);
 
   constructor() {
     this.initForm();
   }
 
   ngOnInit(): void {
-    this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
-      const id = params['id'];
-      if (id) {
-        this.isEditMode = true;
-        this.productId = id;
-        this.loadProduct(id);
-      }
-    });
+    const productId = this.config.data?.productId;
+    if (productId) {
+      this.isEditMode = true;
+      this.productId = productId;
+      this.loadProduct(productId);
+    }
   }
 
   ngOnDestroy(): void {
@@ -64,7 +68,7 @@ export class Form implements OnInit, OnDestroy {
   initForm(): void {
     this.productForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
-      description: ['', [Validators.required, Validators.minLength(10)]],
+      description: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(256)]],
       price: [0, [Validators.required, Validators.min(0.01)]],
       category: ['', [Validators.required, Validators.minLength(2)]],
     });
@@ -86,7 +90,7 @@ export class Form implements OnInit, OnDestroy {
         summary: 'Erro',
         detail: 'Produto não encontrado',
       });
-      this.router.navigate(['/products']);
+      this.dialogRef.close();
     }
   }
 
@@ -113,7 +117,8 @@ export class Form implements OnInit, OnDestroy {
           summary: 'Sucesso',
           detail: 'Produto atualizado com sucesso',
         });
-        setTimeout(() => this.router.navigate(['/products']), 1500);
+        this.loading = false;
+        this.dialogRef.close('success');
       } else {
         this.messageService.add({
           severity: 'error',
@@ -131,7 +136,8 @@ export class Form implements OnInit, OnDestroy {
           summary: 'Sucesso',
           detail: 'Produto criado com sucesso',
         });
-        setTimeout(() => this.router.navigate(['/products']), 1500);
+        this.loading = false;
+        this.dialogRef.close('success');
       } else {
         this.messageService.add({
           severity: 'error',
@@ -144,7 +150,7 @@ export class Form implements OnInit, OnDestroy {
   }
 
   onCancel(): void {
-    this.router.navigate(['/products']);
+    this.dialogRef.close();
   }
 
   markFormGroupTouched(formGroup: FormGroup): void {
@@ -168,6 +174,11 @@ export class Form implements OnInit, OnDestroy {
     if (field?.hasError('minlength')) {
       const minLength = field.errors?.['minlength'].requiredLength;
       return `Este campo deve ter no mínimo ${minLength} caracteres`;
+    }
+
+    if (field?.hasError('maxlength')) {
+      const maxLength = field.errors?.['maxlength'].requiredLength;
+      return `Este campo deve ter no máximo ${maxLength} caracteres`;
     }
 
     if (field?.hasError('min')) {

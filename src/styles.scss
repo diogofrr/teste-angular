@@ -3,8 +3,227 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #ffffff;
+}
+
+app-root {
+  display: block;
+  height: 100%;
+}
+
+/* Paleta de cores - Azul/Roxo para ações principais */
+:root {
+  --primary-color: #6366f1;
+  --primary-color-text: #ffffff;
+  --primary-600: #4f46e5;
+  --primary-700: #4338ca;
+}
+
+/* Customização do tema PrimeNG - Azul/Roxo para ações principais */
+::ng-deep {
+  // Botões primários com cor azul/roxo
+  .p-button:not(.p-button-secondary):not(.p-button-danger):not(.p-button-info):not(
+      .p-button-warning
+    ):not(.p-button-text):not(.p-button-outlined):not(.p-button-link) {
+    background: #6366f1 !important;
+    border-color: #6366f1 !important;
+    color: #ffffff !important;
+
+    &:hover:not(:disabled) {
+      background: #4f46e5 !important;
+      border-color: #4f46e5 !important;
+    }
+
+    &:focus {
+      box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.3) !important;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+    }
+  }
+
+  // Botões outlined com cor azul/roxo
+  .p-button-outlined:not(.p-button-secondary):not(.p-button-danger):not(.p-button-info):not(
+      .p-button-warning
+    ) {
+    color: #6366f1 !important;
+    border-color: #6366f1 !important;
+
+    &:hover:not(:disabled) {
+      background: rgba(99, 102, 241, 0.1) !important;
+      color: #4f46e5 !important;
+      border-color: #4f46e5 !important;
+    }
+  }
+
+  // Tags e badges
+  .p-tag.p-tag-info {
+    background: #6366f1 !important;
+    color: #ffffff !important;
+  }
+
+  // Links e elementos interativos
+  a {
+    color: #6366f1;
+
+    &:hover {
+      color: #4f46e5;
+    }
+  }
+
+  // Input focus com cor azul/roxo
+  .p-inputtext:enabled:focus,
+  .p-inputnumber:enabled:focus .p-inputnumber-input,
+  .p-textarea:enabled:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.2) !important;
+  }
+}
+
+/* Toast Customization - Cores sólidas padronizadas */
+::ng-deep {
+  .p-toast {
+    top: 20px !important;
+    right: 20px !important;
+
+    .p-toast-message {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+      min-width: 300px;
+      border: none !important;
+
+      .p-toast-message-icon {
+        font-size: 1.5rem;
+        margin-right: 0.75rem;
+      }
+
+      .p-toast-message-text {
+        .p-toast-summary {
+          font-weight: 600;
+          font-size: 1rem;
+          margin-bottom: 0.25rem;
+        }
+
+        .p-toast-detail {
+          font-size: 0.9rem;
+          opacity: 0.95;
+        }
+      }
+
+      .p-toast-icon-close {
+        color: rgba(255, 255, 255, 0.9) !important;
+        width: 1.5rem;
+        height: 1.5rem;
+
+        &:hover {
+          color: #ffffff !important;
+        }
+      }
+
+      // Sucesso - Verde sólido padronizado
+      &.p-toast-message-success {
+        background: #10b981 !important;
+        color: #ffffff !important;
+
+        .p-toast-message-icon,
+        .p-toast-icon-close {
+          color: #ffffff !important;
+        }
+
+        .p-toast-message-text {
+          .p-toast-summary {
+            color: #ffffff !important;
+          }
+
+          .p-toast-detail {
+            color: rgba(255, 255, 255, 0.95) !important;
+          }
+        }
+      }
+
+      // Erro - Vermelho sólido
+      &.p-toast-message-error {
+        background: #ef4444 !important;
+        color: #ffffff !important;
+
+        .p-toast-message-icon,
+        .p-toast-icon-close {
+          color: #ffffff !important;
+        }
+
+        .p-toast-message-text {
+          .p-toast-summary {
+            color: #ffffff !important;
+          }
+
+          .p-toast-detail {
+            color: rgba(255, 255, 255, 0.95) !important;
+          }
+        }
+      }
+
+      // Aviso - Laranja sólido
+      &.p-toast-message-warn {
+        background: #f59e0b !important;
+        color: #ffffff !important;
+
+        .p-toast-message-icon,
+        .p-toast-icon-close {
+          color: #ffffff !important;
+        }
+
+        .p-toast-message-text {
+          .p-toast-summary {
+            color: #ffffff !important;
+          }
+
+          .p-toast-detail {
+            color: rgba(255, 255, 255, 0.95) !important;
+          }
+        }
+      }
+
+      // Info - Azul sólido
+      &.p-toast-message-info {
+        background: #3b82f6 !important;
+        color: #ffffff !important;
+
+        .p-toast-message-icon,
+        .p-toast-icon-close {
+          color: #ffffff !important;
+        }
+
+        .p-toast-message-text {
+          .p-toast-summary {
+            color: #ffffff !important;
+          }
+
+          .p-toast-detail {
+            color: rgba(255, 255, 255, 0.95) !important;
+          }
+        }
+      }
+    }
+  }
+
+  // Confirmation Dialog - Tradução para português
+  .p-confirm-dialog {
+    .p-confirm-dialog-message {
+      margin-left: 1rem;
+    }
+
+    .p-confirm-dialog-footer {
+      .p-button {
+        min-width: 6rem;
+      }
+    }
+  }
 }

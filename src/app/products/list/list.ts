@@ -1,17 +1,23 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DialogModule } from 'primeng/dialog';
+import { DialogService } from 'primeng/dynamicdialog';
+import { InputGroupModule } from 'primeng/inputgroup';
+import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { ToastModule } from 'primeng/toast';
+import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { Subject, takeUntil } from 'rxjs';
 import { Product } from '../../models/product.model';
+import { InitService } from '../../services/init.service';
 import { ProductService } from '../../services/product.service';
+import { Form } from '../form/form';
 
 @Component({
   selector: 'app-list',
@@ -19,13 +25,17 @@ import { ProductService } from '../../services/product.service';
     CommonModule,
     TableModule,
     ButtonModule,
+    CardModule,
     InputTextModule,
+    InputGroupModule,
+    InputGroupAddonModule,
     ConfirmDialogModule,
-    ToastModule,
+    DialogModule,
     TagModule,
+    ToolbarModule,
     TooltipModule,
   ],
-  providers: [ConfirmationService, MessageService],
+  providers: [ConfirmationService, DialogService],
   templateUrl: './list.html',
   styleUrl: './list.scss',
 })
@@ -33,15 +43,23 @@ export class List implements OnInit, OnDestroy {
   products: Product[] = [];
   filteredProducts: Product[] = [];
   loading = false;
+  totalProducts = 0;
   private destroy$ = new Subject<void>();
 
   private productService = inject(ProductService);
-  private router = inject(Router);
   private confirmationService = inject(ConfirmationService);
   private messageService = inject(MessageService);
+  private dialogService = inject(DialogService);
+  private cdr = inject(ChangeDetectorRef);
+  private initService = inject(InitService);
 
   ngOnInit(): void {
-    this.loadProducts();
+    // Verifica se já existem produtos, se não, adiciona os 50 produtos de exemplo
+    const existingProducts = this.productService.getProductsValue();
+    if (existingProducts.length === 0) {
+      this.initService.addSampleProducts();
+    }
+    this.subscribeToProducts();
   }
 
   ngOnDestroy(): void {
@@ -49,15 +67,16 @@ export class List implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  loadProducts(): void {
+  subscribeToProducts(): void {
     this.loading = true;
     this.productService
       .getProducts()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (products) => {
-          this.products = products;
-          this.filteredProducts = products;
+          this.products = [...products];
+          this.filteredProducts = [...products];
+          this.totalProducts = products.length;
           this.loading = false;
         },
         error: (error) => {
@@ -72,12 +91,53 @@ export class List implements OnInit, OnDestroy {
       });
   }
 
+  refreshProducts(): void {
+    // Atualiza diretamente do serviço - o BehaviorSubject já foi atualizado
+    const currentProducts = this.productService.getProductsValue();
+    this.products = [...currentProducts];
+    this.filteredProducts = [...currentProducts];
+    this.totalProducts = currentProducts.length;
+    this.cdr.detectChanges();
+  }
+
+  openProductModal(productId?: string): void {
+    const ref = this.dialogService.open(Form, {
+      header: productId ? 'Editar Produto' : 'Novo Produto',
+      width: '90%',
+      style: { maxWidth: '900px' },
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      data: {
+        productId: productId || null,
+      },
+    });
+
+    if (ref) {
+      ref.onClose.pipe(takeUntil(this.destroy$)).subscribe({
+        next: (result) => {
+          if (result === 'success') {
+            // O BehaviorSubject já foi atualizado pelo ProductService
+            // Atualizamos manualmente e forçamos detecção de mudanças
+            const currentProducts = this.productService.getProductsValue();
+            this.products = [...currentProducts];
+            this.filteredProducts = [...currentProducts];
+            this.totalProducts = currentProducts.length;
+            this.cdr.detectChanges();
+          }
+        },
+        error: (error) => {
+          console.error('Erro ao fechar modal:', error);
+        },
+      });
+    }
+  }
+
   navigateToCreate(): void {
-    this.router.navigate(['/products/new']);
+    this.openProductModal();
   }
 
   navigateToEdit(id: string): void {
-    this.router.navigate(['/products/edit', id]);
+    this.openProductModal(id);
   }
 
   confirmDelete(product: Product): void {
@@ -85,7 +145,10 @@ export class List implements OnInit, OnDestroy {
       message: `Deseja realmente excluir o produto "${product.name}"?`,
       header: 'Confirmar Exclusão',
       icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Sim',
+      rejectLabel: 'Não',
       acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-secondary',
       accept: () => {
         this.deleteProduct(product.id);
       },
@@ -101,7 +164,7 @@ export class List implements OnInit, OnDestroy {
         summary: 'Sucesso',
         detail: 'Produto excluído com sucesso',
       });
-      this.loadProducts();
+      this.refreshProducts();
     } else {
       this.messageService.add({
         severity: 'error',
@@ -125,6 +188,7 @@ export class List implements OnInit, OnDestroy {
   filterProducts(searchTerm: string): void {
     if (!searchTerm) {
       this.filteredProducts = this.products;
+      this.totalProducts = this.products.length;
       return;
     }
 
@@ -135,5 +199,19 @@ export class List implements OnInit, OnDestroy {
         p.description.toLowerCase().includes(term) ||
         p.category.toLowerCase().includes(term)
     );
+    this.totalProducts = this.filteredProducts.length;
+  }
+
+  /**
+   * Trunca a descrição para o limite especificado
+   */
+  truncateDescription(description: string, maxLength: number): string {
+    if (!description) {
+      return '';
+    }
+    if (description.length <= maxLength) {
+      return description;
+    }
+    return description.substring(0, maxLength) + '...';
   }
 }

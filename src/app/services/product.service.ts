@@ -42,6 +42,13 @@ export class ProductService {
   }
 
   /**
+   * Obtém o valor atual dos produtos (síncrono)
+   */
+  getProductsValue(): Product[] {
+    return this.productsSubject.value;
+  }
+
+  /**
    * Obtém um produto por ID
    */
   getProductById(id: string): Product | undefined {

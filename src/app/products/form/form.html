@@ -1,0 +1,105 @@
+<div class="product-form-container">
+  <p-card>
+    <ng-template pTemplate="header">
+      <div class="card-header">
+        <h2>{{ isEditMode ? 'Editar Produto' : 'Novo Produto' }}</h2>
+      </div>
+    </ng-template>
+
+    <form [formGroup]="productForm" (ngSubmit)="onSubmit()">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="name">Nome do Produto *</label>
+          <input
+            id="name"
+            type="text"
+            pInputText
+            formControlName="name"
+            [class.ng-invalid]="isFieldInvalid('name')"
+            placeholder="Ex: Notebook Dell"
+          />
+          @if (isFieldInvalid('name')) {
+          <small class="p-error">
+            {{ getFieldError('name') }}
+          </small>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="category">Categoria *</label>
+          <input
+            id="category"
+            type="text"
+            pInputText
+            formControlName="category"
+            [class.ng-invalid]="isFieldInvalid('category')"
+            placeholder="Ex: Eletrônicos"
+          />
+          @if (isFieldInvalid('category')) {
+          <small class="p-error">
+            {{ getFieldError('category') }}
+          </small>
+          }
+        </div>
+
+        <div class="form-field full-width">
+          <label for="description">Descrição *</label>
+          <textarea
+            id="description"
+            pTextarea
+            formControlName="description"
+            [class.ng-invalid]="isFieldInvalid('description')"
+            [rows]="5"
+            placeholder="Descreva o produto..."
+          ></textarea>
+          @if (isFieldInvalid('description')) {
+          <small class="p-error">
+            {{ getFieldError('description') }}
+          </small>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="price">Preço *</label>
+          <p-inputNumber
+            id="price"
+            formControlName="price"
+            mode="currency"
+            currency="BRL"
+            locale="pt-BR"
+            [min]="0.01"
+            [class.ng-invalid]="isFieldInvalid('price')"
+            [showButtons]="true"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            styleClass="full-width-input"
+          ></p-inputNumber>
+          @if (isFieldInvalid('price')) {
+          <small class="p-error">
+            {{ getFieldError('price') }}
+          </small>
+          }
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <p-button
+          label="Cancelar"
+          icon="pi pi-times"
+          severity="secondary"
+          (onClick)="onCancel()"
+          [disabled]="loading"
+        ></p-button>
+        <p-button
+          [label]="isEditMode ? 'Atualizar' : 'Criar'"
+          icon="pi pi-check"
+          type="submit"
+          [loading]="loading"
+          [disabled]="productForm.invalid"
+        ></p-button>
+      </div>
+    </form>
+  </p-card>
+
+  <p-toast></p-toast>
+</div>

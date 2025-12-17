@@ -8,9 +8,6 @@ import { ProductService } from './product.service';
 export class InitService {
   private productService = inject(ProductService);
 
-  /**
-   * Adiciona 50 produtos de exemplo ao sistema
-   */
   addSampleProducts(): void {
     const sampleProducts: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>[] = [
       {

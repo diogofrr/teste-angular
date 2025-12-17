@@ -1,9 +1,6 @@
 import { Product } from '../models/product.model';
 import { ProductService } from '../services/product.service';
 
-/**
- * Adiciona 50 produtos de exemplo ao sistema
- */
 export function addSampleProducts(productService: ProductService): void {
   const sampleProducts: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>[] = [
     {

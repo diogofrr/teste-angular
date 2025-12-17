@@ -10,9 +10,6 @@ export class LocalStorageService {
     this.storage = window.localStorage;
   }
 
-  /**
-   * Verifica se o localStorage está disponível
-   */
   private isStorageAvailable(): boolean {
     try {
       const test = '__storage_test__';
@@ -24,9 +21,6 @@ export class LocalStorageService {
     }
   }
 
-  /**
-   * Obtém um item do localStorage
-   */
   getItem<T>(key: string): T | null {
     if (!this.isStorageAvailable()) {
       console.warn('localStorage não está disponível');
@@ -42,9 +36,6 @@ export class LocalStorageService {
     }
   }
 
-  /**
-   * Salva um item no localStorage
-   */
   setItem<T>(key: string, value: T): boolean {
     if (!this.isStorageAvailable()) {
       console.warn('localStorage não está disponível');
@@ -60,9 +51,6 @@ export class LocalStorageService {
     }
   }
 
-  /**
-   * Remove um item do localStorage
-   */
   removeItem(key: string): boolean {
     if (!this.isStorageAvailable()) {
       return false;
@@ -77,9 +65,6 @@ export class LocalStorageService {
     }
   }
 
-  /**
-   * Limpa todo o localStorage
-   */
   clear(): boolean {
     if (!this.isStorageAvailable()) {
       return false;

@@ -54,7 +54,6 @@ export class List implements OnInit, OnDestroy {
   private initService = inject(InitService);
 
   ngOnInit(): void {
-    // Verifica se já existem produtos, se não, adiciona os 50 produtos de exemplo
     const existingProducts = this.productService.getProductsValue();
     if (existingProducts.length === 0) {
       this.initService.addSampleProducts();
@@ -92,7 +91,6 @@ export class List implements OnInit, OnDestroy {
   }
 
   refreshProducts(): void {
-    // Atualiza diretamente do serviço - o BehaviorSubject já foi atualizado
     const currentProducts = this.productService.getProductsValue();
     this.products = [...currentProducts];
     this.filteredProducts = [...currentProducts];
@@ -116,8 +114,6 @@ export class List implements OnInit, OnDestroy {
       ref.onClose.pipe(takeUntil(this.destroy$)).subscribe({
         next: (result) => {
           if (result === 'success') {
-            // O BehaviorSubject já foi atualizado pelo ProductService
-            // Atualizamos manualmente e forçamos detecção de mudanças
             const currentProducts = this.productService.getProductsValue();
             this.products = [...currentProducts];
             this.filteredProducts = [...currentProducts];
@@ -202,9 +198,6 @@ export class List implements OnInit, OnDestroy {
     this.totalProducts = this.filteredProducts.length;
   }
 
-  /**
-   * Trunca a descrição para o limite especificado
-   */
   truncateDescription(description: string, maxLength: number): string {
     if (!description) {
       return '';

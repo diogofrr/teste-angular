@@ -1,6 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -67,28 +74,77 @@ export class Form implements OnInit, OnDestroy {
 
   initForm(): void {
     this.productForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(3)]],
-      description: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(256)]],
-      price: [0, [Validators.required, Validators.min(0.01)]],
-      category: ['', [Validators.required, Validators.minLength(2)]],
+      name: [
+        '',
+        [
+          Validators.required,
+          Validators.minLength(3),
+          Validators.maxLength(100),
+          (control: AbstractControl): ValidationErrors | null => {
+            if (control.value && control.value.trim().length === 0) {
+              return { whitespace: true };
+            }
+            return null;
+          },
+        ],
+      ],
+      description: [
+        '',
+        [
+          Validators.required,
+          Validators.minLength(10),
+          Validators.maxLength(256),
+          (control: AbstractControl): ValidationErrors | null => {
+            if (control.value && control.value.trim().length === 0) {
+              return { whitespace: true };
+            }
+            return null;
+          },
+        ],
+      ],
+      price: [0, [Validators.required, Validators.min(0.01), Validators.max(999999.99)]],
+      category: [
+        '',
+        [
+          Validators.required,
+          Validators.minLength(2),
+          Validators.maxLength(50),
+          (control: AbstractControl): ValidationErrors | null => {
+            if (control.value && control.value.trim().length === 0) {
+              return { whitespace: true };
+            }
+            return null;
+          },
+        ],
+      ],
     });
   }
 
   loadProduct(id: string): void {
-    const product = this.productService.getProductById(id);
+    try {
+      const product = this.productService.getProductById(id);
 
-    if (product) {
-      this.productForm.patchValue({
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        category: product.category,
-      });
-    } else {
+      if (product) {
+        this.productForm.patchValue({
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          category: product.category,
+        });
+      } else {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erro',
+          detail: 'Produto não encontrado. O produto pode ter sido removido.',
+        });
+        this.dialogRef.close();
+      }
+    } catch (error) {
+      console.error('Erro ao carregar produto', error);
       this.messageService.add({
         severity: 'error',
         summary: 'Erro',
-        detail: 'Produto não encontrado',
+        detail: 'Ocorreu um erro ao carregar os dados do produto.',
       });
       this.dialogRef.close();
     }
@@ -106,46 +162,54 @@ export class Form implements OnInit, OnDestroy {
     }
 
     this.loading = true;
-    const formValue = this.productForm.value;
 
-    if (this.isEditMode && this.productId) {
-      const updated = this.productService.updateProduct(this.productId, formValue);
+    const formValue = {
+      name: this.productForm.get('name')?.value?.trim() || '',
+      description: this.productForm.get('description')?.value?.trim() || '',
+      price: this.productForm.get('price')?.value || 0,
+      category: this.productForm.get('category')?.value?.trim() || '',
+    };
 
-      if (updated) {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Sucesso',
-          detail: 'Produto atualizado com sucesso',
-        });
-        this.loading = false;
-        this.dialogRef.close('success');
+    try {
+      if (this.isEditMode && this.productId) {
+        const updated = this.productService.updateProduct(this.productId, formValue);
+
+        if (updated) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Sucesso',
+            detail: 'Produto atualizado com sucesso',
+          });
+          this.loading = false;
+          this.dialogRef.close('success');
+        } else {
+          throw new Error('Falha ao atualizar produto');
+        }
       } else {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Erro',
-          detail: 'Erro ao atualizar produto',
-        });
-        this.loading = false;
-      }
-    } else {
-      const created = this.productService.createProduct(formValue);
+        const created = this.productService.createProduct(formValue);
 
-      if (created) {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Sucesso',
-          detail: 'Produto criado com sucesso',
-        });
-        this.loading = false;
-        this.dialogRef.close('success');
-      } else {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Erro',
-          detail: 'Erro ao criar produto',
-        });
-        this.loading = false;
+        if (created) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Sucesso',
+            detail: 'Produto criado com sucesso',
+          });
+          this.loading = false;
+          this.dialogRef.close('success');
+        } else {
+          throw new Error('Falha ao criar produto');
+        }
       }
+    } catch (error) {
+      console.error('Erro ao salvar produto', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Erro',
+        detail: this.isEditMode
+          ? 'Não foi possível atualizar o produto. Tente novamente.'
+          : 'Não foi possível criar o produto. Verifique os dados e tente novamente.',
+      });
+      this.loading = false;
     }
   }
 
@@ -171,6 +235,10 @@ export class Form implements OnInit, OnDestroy {
       return 'Este campo é obrigatório';
     }
 
+    if (field?.hasError('whitespace')) {
+      return 'Este campo não pode conter apenas espaços';
+    }
+
     if (field?.hasError('minlength')) {
       const minLength = field.errors?.['minlength'].requiredLength;
       return `Este campo deve ter no mínimo ${minLength} caracteres`;
@@ -183,6 +251,10 @@ export class Form implements OnInit, OnDestroy {
 
     if (field?.hasError('min')) {
       return 'O valor deve ser maior que zero';
+    }
+
+    if (field?.hasError('max')) {
+      return 'O valor excede o limite máximo permitido';
     }
 
     return '';

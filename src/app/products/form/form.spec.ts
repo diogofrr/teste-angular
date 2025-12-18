@@ -10,7 +10,6 @@ import { Form } from './form';
 describe('Form', () => {
   let component: Form;
   let fixture: ComponentFixture<Form>;
-  let productService: ProductService;
   let messageService: MessageService;
   let dialogRef: DynamicDialogRef;
 
@@ -36,7 +35,6 @@ describe('Form', () => {
 
     fixture = TestBed.createComponent(Form);
     component = fixture.componentInstance;
-    productService = TestBed.inject(ProductService);
     messageService = TestBed.inject(MessageService);
     dialogRef = TestBed.inject(DynamicDialogRef);
     localStorage.clear();

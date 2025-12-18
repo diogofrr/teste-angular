@@ -19,8 +19,44 @@ export class ProductService {
   }
 
   private loadProducts(): void {
-    const products = this.localStorageService.getItem<Product[]>(STORAGE_KEY) || [];
-    this.productsSubject.next(products);
+    try {
+      const products = this.localStorageService.getItem<Product[]>(STORAGE_KEY) || [];
+      const validProducts = this.validateProducts(products);
+      this.productsSubject.next(validProducts);
+    } catch (error) {
+      console.error('Erro ao carregar produtos do localStorage', error);
+      this.productsSubject.next([]);
+    }
+  }
+
+  private validateProducts(products: unknown): Product[] {
+    if (!Array.isArray(products)) {
+      return [];
+    }
+
+    return products.filter((product): product is Product => {
+      return (
+        product !== null &&
+        typeof product === 'object' &&
+        'id' in product &&
+        'name' in product &&
+        'description' in product &&
+        'price' in product &&
+        'category' in product &&
+        'createdAt' in product &&
+        'updatedAt' in product &&
+        typeof product.id === 'string' &&
+        typeof product.name === 'string' &&
+        typeof product.description === 'string' &&
+        typeof product.price === 'number' &&
+        typeof product.category === 'string' &&
+        typeof product.createdAt === 'string' &&
+        typeof product.updatedAt === 'string' &&
+        product.price >= 0 &&
+        product.name.trim().length > 0 &&
+        product.category.trim().length > 0
+      );
+    });
   }
 
   private saveProducts(products: Product[]): void {
@@ -42,49 +78,91 @@ export class ProductService {
   }
 
   createProduct(product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Product {
-    const newProduct: Product = {
-      ...product,
-      id: this.generateId(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    try {
+      if (!product.name?.trim() || !product.description?.trim() || !product.category?.trim()) {
+        throw new Error('Campos obrigatórios não preenchidos');
+      }
 
-    const products = [...this.productsSubject.value, newProduct];
-    this.saveProducts(products);
-    return newProduct;
+      if (product.price < 0 || !isFinite(product.price)) {
+        throw new Error('Preço inválido');
+      }
+
+      const newProduct: Product = {
+        ...product,
+        name: product.name.trim(),
+        description: product.description.trim(),
+        category: product.category.trim(),
+        id: this.generateId(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const products = [...this.productsSubject.value, newProduct];
+      this.saveProducts(products);
+      return newProduct;
+    } catch (error) {
+      console.error('Erro ao criar produto', error);
+      throw error;
+    }
   }
 
   updateProduct(id: string, updates: Partial<Omit<Product, 'id' | 'createdAt'>>): Product | null {
-    const products = this.productsSubject.value;
-    const index = products.findIndex((p) => p.id === id);
+    try {
+      const products = this.productsSubject.value;
+      const index = products.findIndex((p) => p.id === id);
 
-    if (index === -1) {
-      return null;
+      if (index === -1) {
+        return null;
+      }
+
+      if (updates.name !== undefined && !updates.name?.trim()) {
+        throw new Error('Nome do produto não pode ser vazio');
+      }
+
+      if (updates.price !== undefined && (updates.price < 0 || !isFinite(updates.price))) {
+        throw new Error('Preço inválido');
+      }
+
+      const updatedProduct: Product = {
+        ...products[index],
+        ...updates,
+        name: updates.name?.trim() ?? products[index].name,
+        description: updates.description?.trim() ?? products[index].description,
+        category: updates.category?.trim() ?? products[index].category,
+        updatedAt: new Date().toISOString(),
+      };
+
+      products[index] = updatedProduct;
+      this.saveProducts(products);
+      return updatedProduct;
+    } catch (error) {
+      console.error('Erro ao atualizar produto', error);
+      throw error;
     }
-
-    const updatedProduct: Product = {
-      ...products[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-
-    products[index] = updatedProduct;
-    this.saveProducts(products);
-    return updatedProduct;
   }
 
   deleteProduct(id: string): boolean {
-    const products = this.productsSubject.value.filter((p) => p.id !== id);
+    try {
+      const products = this.productsSubject.value;
+      const initialLength = products.length;
+      const filteredProducts = products.filter((p) => p.id !== id);
 
-    if (products.length === this.productsSubject.value.length) {
+      if (filteredProducts.length === initialLength) {
+        return false;
+      }
+
+      this.saveProducts(filteredProducts);
+      return true;
+    } catch (error) {
+      console.error('Erro ao excluir produto', error);
       return false;
     }
-
-    this.saveProducts(products);
-    return true;
   }
 
   private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 11);
+    const counter = Math.floor(Math.random() * 10000);
+    return `${timestamp}-${random}-${counter}`;
   }
 }

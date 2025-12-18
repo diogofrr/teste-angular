@@ -23,30 +23,51 @@ export class LocalStorageService {
 
   getItem<T>(key: string): T | null {
     if (!this.isStorageAvailable()) {
-      console.warn('localStorage não está disponível');
       return null;
     }
 
     try {
       const item = this.storage.getItem(key);
-      return item ? JSON.parse(item) : null;
+      if (!item) {
+        return null;
+      }
+
+      const parsed = JSON.parse(item);
+
+      if (
+        parsed === null ||
+        (typeof parsed !== 'object' &&
+          typeof parsed !== 'string' &&
+          typeof parsed !== 'number' &&
+          typeof parsed !== 'boolean' &&
+          !Array.isArray(parsed))
+      ) {
+        return null;
+      }
+
+      return parsed as T;
     } catch (error) {
-      console.error(`Erro ao ler do localStorage: ${error}`);
+      console.error('Erro ao ler do localStorage', error);
       return null;
     }
   }
 
   setItem<T>(key: string, value: T): boolean {
     if (!this.isStorageAvailable()) {
-      console.warn('localStorage não está disponível');
       return false;
     }
 
     try {
-      this.storage.setItem(key, JSON.stringify(value));
+      const serialized = JSON.stringify(value);
+
+      if (serialized.length > 5 * 1024 * 1024) {
+        return false;
+      }
+
+      this.storage.setItem(key, serialized);
       return true;
     } catch (error) {
-      console.error(`Erro ao salvar no localStorage: ${error}`);
+      console.error('Erro ao salvar no localStorage', error);
       return false;
     }
   }
@@ -60,7 +81,7 @@ export class LocalStorageService {
       this.storage.removeItem(key);
       return true;
     } catch (error) {
-      console.error(`Erro ao remover do localStorage: ${error}`);
+      console.error('Erro ao remover do localStorage', error);
       return false;
     }
   }
@@ -74,7 +95,7 @@ export class LocalStorageService {
       this.storage.clear();
       return true;
     } catch (error) {
-      console.error(`Erro ao limpar localStorage: ${error}`);
+      console.error('Erro ao limpar localStorage', error);
       return false;
     }
   }

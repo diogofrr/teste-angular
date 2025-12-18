@@ -14,31 +14,41 @@
             icon="pi pi-plus"
             (onClick)="navigateToCreate()"
             [raised]="true"
+            aria-label="Adicionar novo produto"
+            type="button"
           ></p-button>
         </div>
       </p-toolbar>
     </ng-template>
 
     <div class="search-container">
+      <label for="search-input" class="sr-only">Buscar produtos</label>
       <p-inputGroup>
         <p-inputGroupAddon>
-          <i class="pi pi-search"></i>
+          <i class="pi pi-search" aria-hidden="true"></i>
         </p-inputGroupAddon>
         <input
+          id="search-input"
           type="text"
           pInputText
           placeholder="Buscar por nome, descrição ou categoria..."
           #searchInput
-          (input)="filterProducts(searchInput.value)"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="filterProducts($event)"
+          aria-label="Buscar produtos por nome, descrição ou categoria"
+          aria-describedby="search-description"
         />
-        @if (searchInput.value) {
+        <span id="search-description" class="sr-only"> Digite para buscar produtos na lista </span>
+        @if (searchTerm) {
         <p-inputGroupAddon>
           <p-button
             icon="pi pi-times"
             [text]="true"
             severity="secondary"
-            (onClick)="searchInput.value = ''; filterProducts('')"
+            (onClick)="searchTerm = ''; filterProducts('')"
             pTooltip="Limpar busca"
+            aria-label="Limpar busca"
+            type="button"
           ></p-button>
         </p-inputGroupAddon>
         }
@@ -56,37 +66,60 @@
       [tableStyle]="{ 'min-width': '50rem' }"
       [showCurrentPageReport]="true"
       currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} produtos"
+      aria-label="Tabela de produtos"
     >
       <ng-template pTemplate="header">
         <tr>
-          <th>Nome</th>
-          <th>Descrição</th>
-          <th>Categoria</th>
-          <th>Preço</th>
-          <th>Criado em</th>
-          <th style="width: 10rem">Ações</th>
+          <th scope="col">Nome</th>
+          <th scope="col">Descrição</th>
+          <th scope="col">Categoria</th>
+          <th scope="col">Preço</th>
+          <th scope="col">Criado em</th>
+          <th scope="col" style="width: 10rem">Ações</th>
         </tr>
       </ng-template>
 
       <ng-template pTemplate="body" let-product>
         <tr>
           <td>{{ product.name }}</td>
-          <td>{{ product.description }}</td>
           <td>
-            <p-tag [value]="product.category" severity="info"></p-tag>
+            @if (product.description.length > 100) {
+            <span
+              [pTooltip]="product.description"
+              tooltipPosition="top"
+              [showDelay]="300"
+              [hideDelay]="0"
+              style="cursor: help"
+            >
+              {{ truncateDescription(product.description, 100) }}
+            </span>
+            } @else {
+            {{ product.description }}
+            }
+          </td>
+          <td>
+            <p-tag
+              [value]="product.category"
+              severity="info"
+              [aria-label]="'Categoria: ' + product.category"
+            ></p-tag>
           </td>
           <td>{{ formatPrice(product.price) }}</td>
-          <td>{{ formatDate(product.createdAt) }}</td>
           <td>
-            <div class="actions">
+            <time [dateTime]="product.createdAt">{{ formatDate(product.createdAt) }}</time>
+          </td>
+          <td>
+            <div class="actions" role="group" aria-label="Ações do produto">
               <p-button
                 icon="pi pi-pencil"
                 [rounded]="true"
                 [text]="true"
                 severity="info"
                 (onClick)="navigateToEdit(product.id)"
-                pTooltip="Editar"
+                pTooltip="Editar produto"
                 tooltipPosition="top"
+                [aria-label]="'Editar produto ' + product.name"
+                type="button"
               ></p-button>
               <p-button
                 icon="pi pi-trash"
@@ -94,8 +127,10 @@
                 [text]="true"
                 severity="danger"
                 (onClick)="confirmDelete(product)"
-                pTooltip="Excluir"
+                pTooltip="Excluir produto"
                 tooltipPosition="top"
+                [aria-label]="'Excluir produto ' + product.name"
+                type="button"
               ></p-button>
             </div>
           </td>
@@ -116,6 +151,8 @@
                 icon="pi pi-plus"
                 (onClick)="navigateToCreate()"
                 [outlined]="true"
+                aria-label="Adicionar primeiro produto"
+                type="button"
               ></p-button>
             </div>
           </td>

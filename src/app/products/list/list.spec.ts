@@ -4,7 +4,6 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 import { vi } from 'vitest';
 import { Product } from '../../models/product.model';
-import { InitService } from '../../services/init.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { ProductService } from '../../services/product.service';
 import { List } from './list';
@@ -14,17 +13,6 @@ describe('List', () => {
   let fixture: ComponentFixture<List>;
   let productService: ProductService;
   let messageService: MessageService;
-  let confirmationService: ConfirmationService;
-
-  const mockProduct: Product = {
-    id: '1',
-    name: 'Test Product',
-    description: 'Test Description',
-    price: 100.0,
-    category: 'Test Category',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
 
   beforeEach(async () => {
     const messageServiceSpy = {
@@ -39,7 +27,6 @@ describe('List', () => {
       providers: [
         ProductService,
         LocalStorageService,
-        InitService,
         ChangeDetectorRef,
         { provide: MessageService, useValue: messageServiceSpy },
         { provide: ConfirmationService, useValue: confirmationServiceSpy },
@@ -51,8 +38,8 @@ describe('List', () => {
     component = fixture.componentInstance;
     productService = TestBed.inject(ProductService);
     messageService = TestBed.inject(MessageService);
-    confirmationService = TestBed.inject(ConfirmationService);
     localStorage.clear();
+    fixture.detectChanges();
   });
 
   it('should create', () => {
@@ -128,7 +115,9 @@ describe('List', () => {
       category: 'Books',
     });
 
-    component.products = productService.getProductsValue();
+    const products = productService.getProductsValue();
+    component.products = [...products];
+    component.filteredProducts = [...products];
     component.filterProducts('Electronics');
 
     expect(component.filteredProducts.length).toBe(1);
@@ -149,7 +138,9 @@ describe('List', () => {
       category: 'Category B',
     });
 
-    component.products = productService.getProductsValue();
+    const products = productService.getProductsValue();
+    component.products = [...products];
+    component.filteredProducts = [...products];
     component.filterProducts('');
 
     expect(component.filteredProducts.length).toBe(component.products.length);
@@ -202,5 +193,35 @@ describe('List', () => {
 
     expect(messageService.add).toHaveBeenCalled();
     expect(component.products.find((p) => p.id === product.id)).toBeUndefined();
+  });
+
+  it('should track products by id', () => {
+    const product1: Product = {
+      id: '1',
+      name: 'Product 1',
+      description: 'Description 1',
+      price: 100,
+      category: 'Category',
+      createdAt: '2024-01-01',
+      updatedAt: '2024-01-01',
+    };
+
+    const product2: Product = {
+      id: '2',
+      name: 'Product 2',
+      description: 'Description 2',
+      price: 200,
+      category: 'Category',
+      createdAt: '2024-01-01',
+      updatedAt: '2024-01-01',
+    };
+
+    expect(component.trackByProductId(0, product1)).toBe('1');
+    expect(component.trackByProductId(1, product2)).toBe('2');
+  });
+
+  it('should filter products immediately', () => {
+    component.filterProducts('test');
+    expect(component.searchTerm).toBe('test');
   });
 });

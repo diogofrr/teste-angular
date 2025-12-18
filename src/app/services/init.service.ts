@@ -391,9 +391,11 @@ export class InitService {
     ];
 
     sampleProducts.forEach((product) => {
-      this.productService.createProduct(product);
+      try {
+        this.productService.createProduct(product);
+      } catch (error) {
+        console.error('Erro ao adicionar produto de exemplo', error);
+      }
     });
-
-    console.log('✅ 50 produtos adicionados com sucesso!');
   }
 }

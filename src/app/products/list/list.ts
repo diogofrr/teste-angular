@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -15,7 +16,6 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { Subject, takeUntil } from 'rxjs';
 import { Product } from '../../models/product.model';
-import { InitService } from '../../services/init.service';
 import { ProductService } from '../../services/product.service';
 import { Form } from '../form/form';
 
@@ -23,6 +23,7 @@ import { Form } from '../form/form';
   selector: 'app-list',
   imports: [
     CommonModule,
+    FormsModule,
     TableModule,
     ButtonModule,
     CardModule,
@@ -44,20 +45,15 @@ export class List implements OnInit, OnDestroy {
   filteredProducts: Product[] = [];
   loading = false;
   totalProducts = 0;
+  searchTerm = '';
   private destroy$ = new Subject<void>();
 
   private productService = inject(ProductService);
   private confirmationService = inject(ConfirmationService);
   private messageService = inject(MessageService);
   private dialogService = inject(DialogService);
-  private cdr = inject(ChangeDetectorRef);
-  private initService = inject(InitService);
 
   ngOnInit(): void {
-    const existingProducts = this.productService.getProductsValue();
-    if (existingProducts.length === 0) {
-      this.initService.addSampleProducts();
-    }
     this.subscribeToProducts();
   }
 
@@ -72,30 +68,47 @@ export class List implements OnInit, OnDestroy {
       .getProducts()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (products) => {
-          this.products = [...products];
-          this.filteredProducts = [...products];
-          this.totalProducts = products.length;
+        next: (products: Product[]) => {
+          this.updateProductsList(products);
           this.loading = false;
         },
-        error: (error) => {
-          console.error('Erro ao carregar produtos:', error);
+        error: (error: unknown) => {
+          console.error('Erro ao carregar produtos', error);
           this.messageService.add({
             severity: 'error',
             summary: 'Erro',
-            detail: 'Erro ao carregar produtos',
+            detail: 'Não foi possível carregar os produtos. Por favor, recarregue a página.',
           });
           this.loading = false;
         },
       });
   }
 
+  private updateProductsList(products: Product[]): void {
+    this.products = [...products];
+    this.applyFilter(this.searchTerm);
+  }
+
+  private applyFilter(searchTerm: string): void {
+    if (!searchTerm?.trim()) {
+      this.filteredProducts = [...this.products];
+      this.totalProducts = this.products.length;
+      return;
+    }
+
+    const term = searchTerm.toLowerCase().trim();
+    this.filteredProducts = this.products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(term) ||
+        p.description.toLowerCase().includes(term) ||
+        p.category.toLowerCase().includes(term)
+    );
+    this.totalProducts = this.filteredProducts.length;
+  }
+
   refreshProducts(): void {
     const currentProducts = this.productService.getProductsValue();
-    this.products = [...currentProducts];
-    this.filteredProducts = [...currentProducts];
-    this.totalProducts = currentProducts.length;
-    this.cdr.detectChanges();
+    this.updateProductsList(currentProducts);
   }
 
   openProductModal(productId?: string): void {
@@ -112,17 +125,13 @@ export class List implements OnInit, OnDestroy {
 
     if (ref) {
       ref.onClose.pipe(takeUntil(this.destroy$)).subscribe({
-        next: (result) => {
+        next: (result: unknown) => {
           if (result === 'success') {
-            const currentProducts = this.productService.getProductsValue();
-            this.products = [...currentProducts];
-            this.filteredProducts = [...currentProducts];
-            this.totalProducts = currentProducts.length;
-            this.cdr.detectChanges();
+            this.refreshProducts();
           }
         },
-        error: (error) => {
-          console.error('Erro ao fechar modal:', error);
+        error: (error: unknown) => {
+          console.error('Erro ao fechar modal', error);
         },
       });
     }
@@ -152,20 +161,29 @@ export class List implements OnInit, OnDestroy {
   }
 
   deleteProduct(id: string): void {
-    const success = this.productService.deleteProduct(id);
+    try {
+      const success = this.productService.deleteProduct(id);
 
-    if (success) {
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Sucesso',
-        detail: 'Produto excluído com sucesso',
-      });
-      this.refreshProducts();
-    } else {
+      if (success) {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Sucesso',
+          detail: 'Produto excluído com sucesso',
+        });
+        this.refreshProducts();
+      } else {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erro',
+          detail: 'Não foi possível excluir o produto. Tente novamente.',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao excluir produto', error);
       this.messageService.add({
         severity: 'error',
         summary: 'Erro',
-        detail: 'Erro ao excluir produto',
+        detail: 'Ocorreu um erro inesperado ao excluir o produto.',
       });
     }
   }
@@ -182,20 +200,12 @@ export class List implements OnInit, OnDestroy {
   }
 
   filterProducts(searchTerm: string): void {
-    if (!searchTerm) {
-      this.filteredProducts = this.products;
-      this.totalProducts = this.products.length;
-      return;
-    }
+    this.searchTerm = searchTerm || '';
+    this.applyFilter(this.searchTerm);
+  }
 
-    const term = searchTerm.toLowerCase();
-    this.filteredProducts = this.products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(term) ||
-        p.description.toLowerCase().includes(term) ||
-        p.category.toLowerCase().includes(term)
-    );
-    this.totalProducts = this.filteredProducts.length;
+  trackByProductId(_index: number, product: Product): string {
+    return product.id;
   }
 
   truncateDescription(description: string, maxLength: number): string {

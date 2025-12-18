@@ -1,18 +1,17 @@
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
+import { vi } from 'vitest';
 import { LocalStorageService } from './local-storage.service';
 import { ProductService } from './product.service';
 
 describe('ProductService', () => {
   let service: ProductService;
-  let localStorageService: LocalStorageService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [ProductService, LocalStorageService],
     });
     service = TestBed.inject(ProductService);
-    localStorageService = TestBed.inject(LocalStorageService);
     localStorage.clear();
   });
 
@@ -129,5 +128,111 @@ describe('ProductService', () => {
 
     expect(products.length).toBeGreaterThan(0);
     expect(products[0].name).toBe(productData.name);
+  });
+
+  it('should validate and filter invalid products from localStorage', async () => {
+    localStorage.clear();
+
+    const invalidData = [
+      {
+        id: '1',
+        name: 'Valid',
+        description: 'Valid description',
+        price: 100,
+        category: 'Cat',
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      },
+      {
+        id: '2',
+        name: '',
+        description: 'Invalid',
+        price: 100,
+        category: 'Cat',
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      },
+      {
+        id: '3',
+        name: 'Valid',
+        description: 'Valid',
+        price: -10,
+        category: 'Cat',
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      },
+      null,
+      'invalid string',
+    ];
+
+    localStorage.setItem('products', JSON.stringify(invalidData));
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [ProductService, LocalStorageService],
+    });
+    const newService = TestBed.inject(ProductService);
+    const products = newService.getProductsValue();
+
+    expect(products.length).toBe(1);
+    expect(products[0].name).toBe('Valid');
+  });
+
+  it('should throw error when creating product with invalid data', () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      /* empty */
+    });
+
+    expect(() => {
+      service.createProduct({
+        name: '',
+        description: 'Valid description',
+        price: 100,
+        category: 'Category',
+      });
+    }).toThrow();
+
+    expect(() => {
+      service.createProduct({
+        name: 'Valid',
+        description: 'Valid',
+        price: -10,
+        category: 'Category',
+      });
+    }).toThrow();
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('should sanitize product data (trim whitespace)', () => {
+    const product = service.createProduct({
+      name: '  Product Name  ',
+      description: '  Description  ',
+      price: 100,
+      category: '  Category  ',
+    });
+
+    expect(product.name).toBe('Product Name');
+    expect(product.description).toBe('Description');
+    expect(product.category).toBe('Category');
+  });
+
+  it('should generate unique IDs', () => {
+    const product1 = service.createProduct({
+      name: 'Product 1',
+      description: 'Description 1',
+      price: 100,
+      category: 'Category',
+    });
+
+    const product2 = service.createProduct({
+      name: 'Product 2',
+      description: 'Description 2',
+      price: 200,
+      category: 'Category',
+    });
+
+    expect(product1.id).not.toBe(product2.id);
+    expect(product1.id).toMatch(/^\d+-[a-z0-9]+-\d+$/);
   });
 });

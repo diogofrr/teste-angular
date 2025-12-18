@@ -95,4 +95,33 @@
       margin-bottom: 1.5rem;
     }
   }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  ::ng-deep {
+    .p-datatable {
+      td:nth-child(2) {
+        max-width: 300px;
+        overflow: hidden;
+
+        span[pTooltip] {
+          display: inline-block;
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+    }
+  }
 }
